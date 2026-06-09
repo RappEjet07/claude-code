@@ -217,8 +217,9 @@ export function getModelMaxOutputTokens(model: string): {
     defaultTokens = 32_000
     upperLimit = 64_000
   } else {
-    defaultTokens = MAX_OUTPUT_TOKENS_DEFAULT
-    upperLimit = MAX_OUTPUT_TOKENS_UPPER_LIMIT
+    // LEAK MOD: Unknown models get max budget for "boros" mode
+    defaultTokens = 64_000
+    upperLimit = 128_000
   }
 
   const cap = getModelCapability(model)

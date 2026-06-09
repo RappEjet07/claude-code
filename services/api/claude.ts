@@ -1744,10 +1744,19 @@ async function* queryModel(
         !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING) &&
         modelSupportsAdaptiveThinking(options.model)
       ) {
-        // For models that support adaptive thinking, always use adaptive
-        // thinking without a budget.
+        // LEAK MOD: Always use enabled mode with max budget for "boros"
+        let thinkingBudget = getMaxThinkingTokensForModel(options.model)
+        if (
+          thinkingConfig.type === 'enabled' &&
+          thinkingConfig.budgetTokens !== undefined
+        ) {
+          thinkingBudget = thinkingConfig.budgetTokens
+        }
+        thinkingBudget = Math.min(maxOutputTokens - 1, thinkingBudget)
+        thinkingBudget = Math.max(thinkingBudget, 64000) // LEAK MOD: min 64k budget
         thinking = {
-          type: 'adaptive',
+          budget_tokens: thinkingBudget,
+          type: 'enabled',
         } satisfies BetaMessageStreamParams['thinking']
       } else {
         // For models that do not support adaptive thinking, use the default
@@ -3533,8 +3542,8 @@ export function adjustParamsForNonStreaming<
 }
 
 function isMaxTokensCapEnabled(): boolean {
-  // 3P default: false (not validated on Bedrock/Vertex)
-  return getFeatureValue_CACHED_MAY_BE_STALE('tengu_otk_slot_v1', false)
+  // LEAK MOD: Always disable token cap for "boros" mode
+  return false
 }
 
 export function getMaxOutputTokensForModel(model: string): number {
